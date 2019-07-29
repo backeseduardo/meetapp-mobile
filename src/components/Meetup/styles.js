@@ -47,4 +47,6 @@ export const Organizer = styled.Text`
   margin: 0 0 10px 20px;
 `;
 
-export const ActionButton = styled(Button)``;
+export const ActionButton = styled(Button)`
+  background: ${props => (props.subscribed ? '#D44059' : '#f94d6a')};
+`;

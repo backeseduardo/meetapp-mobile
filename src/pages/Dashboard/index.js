@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { format, subDays, addDays } from 'date-fns';
 import pt from 'date-fns/locale/pt';
+import PropTypes from 'prop-types';
 
 import api from '~/services/api';
 
@@ -17,6 +19,7 @@ import {
 } from './styles';
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(false);
   const [meetups, setMeetups] = useState([]);
   const [date, setDate] = useState(new Date());
 
@@ -25,20 +28,23 @@ export default function Dashboard() {
     [date]
   );
 
+  async function loadMeetups() {
+    setLoading(true);
+
+    const response = await api.get('available', {
+      params: {
+        page: 1,
+        date: format(date, 'yyyy-MM-dd'),
+      },
+    });
+
+    setMeetups(response.data.rows);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function loadMeetups() {
-      const response = await api.get('meetups', {
-        params: {
-          page: 1,
-          date: format(date, 'yyyy-MM-dd'),
-        },
-      });
-
-      setMeetups(response.data.rows);
-    }
-
     loadMeetups();
-  }, [date]);
+  }, [date]); // eslint-disable-line
 
   return (
     <Background>
@@ -55,19 +61,31 @@ export default function Dashboard() {
           </DateChooserButton>
         </DateChooser>
 
-        <MeetupsList
-          data={meetups}
-          keyExtractor={item => String(item.id)}
-          renderItem={({ item }) => <Meetup data={item} />}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <MeetupsList
+            data={meetups}
+            keyExtractor={item => String(item.id)}
+            renderItem={({ item }) => <Meetup data={item} />}
+            refreshing={loading}
+            onRefresh={loadMeetups}
+          />
+        )}
       </Container>
     </Background>
   );
 }
 
+const tabBarIcon = ({ tintColor }) => (
+  <Icon name="event" size={20} color={tintColor} />
+);
+
+tabBarIcon.propTypes = {
+  tintColor: PropTypes.string.isRequired,
+};
+
 Dashboard.navigationOptions = {
   tabBarLabel: 'Dashboard',
-  tabBarIcon: ({ tintColor }) => (
-    <Icon name="event" size={20} color={tintColor} />
-  ),
+  tabBarIcon,
 };
