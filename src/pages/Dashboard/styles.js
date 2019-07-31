@@ -22,4 +22,23 @@ export const DateDisplay = styled.Text`
   margin: 0 20px;
 `;
 
-export const MeetupsList = styled.FlatList``;
+export const MeetupsList = styled.FlatList.attrs({
+  contentContainerStyle: {
+    flexGrow: 1,
+  },
+})`
+  flex: 1;
+`;
+
+export const ListEmpty = styled.View`
+  flex: 1;
+
+  align-items: center;
+  justify-content: center;
+`;
+
+export const ListEmptyText = styled.Text`
+  color: #fff;
+  font-size: 24px;
+  margin-top: 20px;
+`;

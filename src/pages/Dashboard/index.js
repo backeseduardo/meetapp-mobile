@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, subDays, addDays } from 'date-fns';
 import pt from 'date-fns/locale/pt';
 import PropTypes from 'prop-types';
@@ -16,6 +17,8 @@ import {
   DateChooserButton,
   DateDisplay,
   MeetupsList,
+  ListEmpty,
+  ListEmptyText,
 } from './styles';
 
 export default function Dashboard() {
@@ -70,6 +73,16 @@ export default function Dashboard() {
             renderItem={({ item }) => <Meetup data={item} />}
             refreshing={loading}
             onRefresh={loadMeetups}
+            ListEmptyComponent={() => (
+              <ListEmpty>
+                <IconCommunity
+                  name="emoticon-sad-outline"
+                  size={40}
+                  color="#fff"
+                />
+                <ListEmptyText>Nenhum evento nesse dia.</ListEmptyText>
+              </ListEmpty>
+            )}
           />
         )}
       </Container>
