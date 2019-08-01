@@ -3,7 +3,16 @@ import { ActivityIndicator, Alert } from 'react-native';
 import { withNavigationFocus } from 'react-navigation';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
-import { format, subDays, addDays } from 'date-fns';
+import {
+  format,
+  subDays,
+  addDays,
+  isEqual,
+  setMilliseconds,
+  setSeconds,
+  setMinutes,
+  setHours,
+} from 'date-fns';
 import pt from 'date-fns/locale/pt';
 import PropTypes from 'prop-types';
 
@@ -26,6 +35,7 @@ function Dashboard({ isFocused }) {
   const [loading, setLoading] = useState(true);
   const [meetups, setMeetups] = useState([]);
   const [date, setDate] = useState(new Date());
+  const [today, setToday] = useState(true);
 
   const formattedDate = useMemo(
     () => format(date, "dd 'de' MMMM", { locale: pt }),
@@ -55,6 +65,17 @@ function Dashboard({ isFocused }) {
   useEffect(() => {
     if (isFocused) {
       loadMeetups();
+
+      const checkDate = setMilliseconds(
+        setSeconds(setMinutes(setHours(date, 0), 0), 0),
+        0
+      );
+      const checkToday = setMilliseconds(
+        setSeconds(setMinutes(setHours(new Date(), 0), 0), 0),
+        0
+      );
+
+      setToday(isEqual(checkDate, checkToday));
     }
   }, [date, isFocused]); // eslint-disable-line
 
@@ -62,7 +83,10 @@ function Dashboard({ isFocused }) {
     <Background>
       <Container>
         <DateChooser>
-          <DateChooserButton onPress={() => setDate(subDays(date, 1))}>
+          <DateChooserButton
+            disabled={today}
+            onPress={() => !today && setDate(subDays(date, 1))}
+          >
             <Icon name="chevron-left" size={24} color="#fff" />
           </DateChooserButton>
 

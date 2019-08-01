@@ -13,7 +13,9 @@ export const DateChooser = styled.View`
   justify-content: center;
 `;
 
-export const DateChooserButton = styled(RectButton)``;
+export const DateChooserButton = styled(RectButton)`
+  opacity: ${props => (props.disabled ? 0.5 : 1)};
+`;
 
 export const DateDisplay = styled.Text`
   color: #fff;
