@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import api from '~/services/api';
 
 import Background from '~/components/Background';
-import Meetup from '~/components/Meetup';
 
 import {
   Container,
@@ -27,6 +26,15 @@ import {
   DateChooserButton,
   DateDisplay,
   MeetupsList,
+  Meetup,
+  EventImage,
+  Wrapper,
+  EventTitle,
+  EventDate,
+  EventLocation,
+  EventOrganizer,
+  EventSubscribedText,
+  ActionButton,
   ListEmpty,
   ListEmptyText,
 } from './styles';
@@ -79,6 +87,32 @@ function Dashboard({ isFocused }) {
     }
   }, [date, isFocused]); // eslint-disable-line
 
+  async function handleAction(id) {
+    try {
+      setMeetups(
+        meetups.map(meetup => ({
+          ...meetup,
+          loading: meetup.id === id,
+        }))
+      );
+
+      const response = await api.put(`subscriptions/${id}`);
+
+      if (response.error) {
+        Alert.alert('Erro', response.error);
+        return;
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        Alert.alert('Erro', err.response.data.error);
+      } else {
+        Alert.alert('Erro', 'Erro desconhecido, tente novamente mais tarde.');
+      }
+    } finally {
+      loadMeetups();
+    }
+  }
+
   return (
     <Background>
       <Container>
@@ -103,7 +137,31 @@ function Dashboard({ isFocused }) {
           <MeetupsList
             data={meetups}
             keyExtractor={item => String(item.id)}
-            renderItem={({ item }) => <Meetup data={item} />}
+            renderItem={({ item }) => (
+              <Meetup>
+                <EventImage source={{ uri: item.banner.url }} />
+
+                <Wrapper>
+                  <EventTitle>{item.title}</EventTitle>
+                  <EventDate>{item.date}</EventDate>
+                  <EventLocation>{item.location}</EventLocation>
+                  <EventOrganizer>{item.user.name}</EventOrganizer>
+
+                  {item.subscribed ? (
+                    <EventSubscribedText>
+                      Você está inscrito neste evento
+                    </EventSubscribedText>
+                  ) : (
+                    <ActionButton
+                      onPress={() => handleAction(item.id)}
+                      loading={item.loading}
+                    >
+                      Realizar inscrição
+                    </ActionButton>
+                  )}
+                </Wrapper>
+              </Meetup>
+            )}
             refreshing={loading}
             onRefresh={loadMeetups}
             ListEmptyComponent={() => (
