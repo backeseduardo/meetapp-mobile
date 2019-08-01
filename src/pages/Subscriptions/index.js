@@ -4,25 +4,15 @@ import { withNavigationFocus } from 'react-navigation';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
 import PropTypes from 'prop-types';
+import { parseISO, formatRelative } from 'date-fns';
+import pt from 'date-fns/locale/pt';
 
 import api from '~/services/api';
 
 import Background from '~/components/Background';
+import Event from '~/components/Event';
 
-import {
-  Container,
-  MeetupsList,
-  Meetup,
-  EventImage,
-  Wrapper,
-  Title,
-  Date,
-  Location,
-  Organizer,
-  ActionButton,
-  ListEmpty,
-  ListEmptyText,
-} from './styles';
+import { Container, MeetupsList, ListEmpty, ListEmptyText } from './styles';
 
 function Subscriptions({ isFocused }) {
   const [loading, setLoading] = useState(true);
@@ -37,7 +27,12 @@ function Subscriptions({ isFocused }) {
       setMeetups(
         response.data.map(meetup => ({
           ...meetup,
+          formattedDate: formatRelative(parseISO(meetup.date), new Date(), {
+            locale: pt,
+            addSuffix: true,
+          }),
           loading: false,
+          subscribed: true,
         }))
       );
     } finally {
@@ -49,7 +44,7 @@ function Subscriptions({ isFocused }) {
     if (isFocused) loadMeetups();
   }, [isFocused]);
 
-  async function handleAction(id) {
+  async function handleUnsubscribe(id) {
     try {
       setMeetups(
         meetups.map(meetup => ({
@@ -85,23 +80,10 @@ function Subscriptions({ isFocused }) {
             data={meetups}
             keyExtractor={item => String(item.id)}
             renderItem={({ item }) => (
-              <Meetup>
-                <EventImage source={{ uri: item.banner.url }} />
-
-                <Wrapper>
-                  <Title>{item.title}</Title>
-                  <Date>{item.date}</Date>
-                  <Location>{item.location}</Location>
-                  <Organizer>{item.user.name}</Organizer>
-
-                  <ActionButton
-                    onPress={() => handleAction(item.id)}
-                    loading={item.loading}
-                  >
-                    Cancelar inscrição
-                  </ActionButton>
-                </Wrapper>
-              </Meetup>
+              <Event
+                data={item}
+                onUnsubscribe={() => handleUnsubscribe(item.id)}
+              />
             )}
             refreshing={loading}
             onRefresh={loadMeetups}

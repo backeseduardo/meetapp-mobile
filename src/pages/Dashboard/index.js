@@ -4,6 +4,7 @@ import { withNavigationFocus } from 'react-navigation';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
+  parseISO,
   format,
   subDays,
   addDays,
@@ -12,6 +13,7 @@ import {
   setSeconds,
   setMinutes,
   setHours,
+  formatRelative,
 } from 'date-fns';
 import pt from 'date-fns/locale/pt';
 import PropTypes from 'prop-types';
@@ -19,6 +21,7 @@ import PropTypes from 'prop-types';
 import api from '~/services/api';
 
 import Background from '~/components/Background';
+import Event from '~/components/Event';
 
 import {
   Container,
@@ -26,15 +29,6 @@ import {
   DateChooserButton,
   DateDisplay,
   MeetupsList,
-  Meetup,
-  EventImage,
-  Wrapper,
-  EventTitle,
-  EventDate,
-  EventLocation,
-  EventOrganizer,
-  EventSubscribedText,
-  ActionButton,
   ListEmpty,
   ListEmptyText,
 } from './styles';
@@ -59,7 +53,15 @@ function Dashboard({ isFocused }) {
         },
       });
 
-      setMeetups(response.data.rows);
+      setMeetups(
+        response.data.rows.map(meetup => ({
+          ...meetup,
+          formattedDate: formatRelative(parseISO(meetup.date), new Date(), {
+            locale: pt,
+            addSuffix: true,
+          }),
+        }))
+      );
     } catch (err) {
       Alert.alert(
         'Erro ao carregar meetups',
@@ -87,7 +89,7 @@ function Dashboard({ isFocused }) {
     }
   }, [date, isFocused]); // eslint-disable-line
 
-  async function handleAction(id) {
+  async function handleSubscribe(id) {
     try {
       setMeetups(
         meetups.map(meetup => ({
@@ -97,6 +99,32 @@ function Dashboard({ isFocused }) {
       );
 
       const response = await api.put(`subscriptions/${id}`);
+
+      if (response.error) {
+        Alert.alert('Erro', response.error);
+        return;
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        Alert.alert('Erro', err.response.data.error);
+      } else {
+        Alert.alert('Erro', 'Erro desconhecido, tente novamente mais tarde.');
+      }
+    } finally {
+      loadMeetups();
+    }
+  }
+
+  async function handleUnsubscribe(id) {
+    try {
+      setMeetups(
+        meetups.map(meetup => ({
+          ...meetup,
+          loading: meetup.id === id,
+        }))
+      );
+
+      const response = await api.delete(`subscriptions/${id}`);
 
       if (response.error) {
         Alert.alert('Erro', response.error);
@@ -138,29 +166,11 @@ function Dashboard({ isFocused }) {
             data={meetups}
             keyExtractor={item => String(item.id)}
             renderItem={({ item }) => (
-              <Meetup>
-                <EventImage source={{ uri: item.banner.url }} />
-
-                <Wrapper>
-                  <EventTitle>{item.title}</EventTitle>
-                  <EventDate>{item.date}</EventDate>
-                  <EventLocation>{item.location}</EventLocation>
-                  <EventOrganizer>{item.user.name}</EventOrganizer>
-
-                  {item.subscribed ? (
-                    <EventSubscribedText>
-                      Você está inscrito neste evento
-                    </EventSubscribedText>
-                  ) : (
-                    <ActionButton
-                      onPress={() => handleAction(item.id)}
-                      loading={item.loading}
-                    >
-                      Realizar inscrição
-                    </ActionButton>
-                  )}
-                </Wrapper>
-              </Meetup>
+              <Event
+                data={item}
+                onSubscribe={() => handleSubscribe(item.id)}
+                onUnsubscribe={() => handleUnsubscribe(item.id)}
+              />
             )}
             refreshing={loading}
             onRefresh={loadMeetups}
