@@ -29,6 +29,8 @@ export default function SignIn({ navigation }) {
 
   function handleSubmit() {
     dispatch(signInRequest(email, password));
+
+    setPassword('');
   }
 
   return (
