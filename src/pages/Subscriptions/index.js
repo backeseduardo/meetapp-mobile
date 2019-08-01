@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import { withNavigationFocus } from 'react-navigation';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -8,9 +8,21 @@ import PropTypes from 'prop-types';
 import api from '~/services/api';
 
 import Background from '~/components/Background';
-import Meetup from '~/components/Meetup';
 
-import { Container, MeetupsList, ListEmpty, ListEmptyText } from './styles';
+import {
+  Container,
+  MeetupsList,
+  Meetup,
+  EventImage,
+  Wrapper,
+  Title,
+  Date,
+  Location,
+  Organizer,
+  ActionButton,
+  ListEmpty,
+  ListEmptyText,
+} from './styles';
 
 function Subscriptions({ isFocused }) {
   const [loading, setLoading] = useState(true);
@@ -18,12 +30,14 @@ function Subscriptions({ isFocused }) {
 
   async function loadMeetups() {
     try {
+      setLoading(true);
+
       const response = await api.get('subscriptions');
 
       setMeetups(
         response.data.map(meetup => ({
           ...meetup,
-          subscribed: true,
+          loading: false,
         }))
       );
     } finally {
@@ -35,8 +49,30 @@ function Subscriptions({ isFocused }) {
     if (isFocused) loadMeetups();
   }, [isFocused]);
 
-  function handleUnsubscribe(id) {
-    // setMeetups(meetups.filter(meetup => meetup.id !== id));
+  async function handleAction(id) {
+    try {
+      setMeetups(
+        meetups.map(meetup => ({
+          ...meetup,
+          loading: meetup.id === id,
+        }))
+      );
+
+      const response = await api.delete(`subscriptions/${id}`);
+
+      if (response.error) {
+        Alert.alert('Erro', response.error);
+        return;
+      }
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        Alert.alert('Erro', err.response.data.error);
+      } else {
+        Alert.alert('Erro', 'Erro desconhecido, tente novamente mais tarde.');
+      }
+    } finally {
+      loadMeetups();
+    }
   }
 
   return (
@@ -49,7 +85,23 @@ function Subscriptions({ isFocused }) {
             data={meetups}
             keyExtractor={item => String(item.id)}
             renderItem={({ item }) => (
-              <Meetup data={item} onUnsubscribe={handleUnsubscribe} />
+              <Meetup>
+                <EventImage source={{ uri: item.banner.url }} />
+
+                <Wrapper>
+                  <Title>{item.title}</Title>
+                  <Date>{item.date}</Date>
+                  <Location>{item.location}</Location>
+                  <Organizer>{item.user.name}</Organizer>
+
+                  <ActionButton
+                    onPress={() => handleAction(item.id)}
+                    loading={item.loading}
+                  >
+                    Cancelar inscrição
+                  </ActionButton>
+                </Wrapper>
+              </Meetup>
             )}
             refreshing={loading}
             onRefresh={loadMeetups}
