@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
+import { withNavigationFocus } from 'react-navigation';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconCommunity from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format, subDays, addDays } from 'date-fns';
@@ -21,8 +22,8 @@ import {
   ListEmptyText,
 } from './styles';
 
-export default function Dashboard() {
-  const [loading, setLoading] = useState(false);
+function Dashboard({ isFocused }) {
+  const [loading, setLoading] = useState(true);
   const [meetups, setMeetups] = useState([]);
   const [date, setDate] = useState(new Date());
 
@@ -32,22 +33,30 @@ export default function Dashboard() {
   );
 
   async function loadMeetups() {
-    setLoading(true);
+    try {
+      const response = await api.get('available', {
+        params: {
+          page: 1,
+          date: format(date, 'yyyy-MM-dd'),
+        },
+      });
 
-    const response = await api.get('available', {
-      params: {
-        page: 1,
-        date: format(date, 'yyyy-MM-dd'),
-      },
-    });
-
-    setMeetups(response.data.rows);
-    setLoading(false);
+      setMeetups(response.data.rows);
+    } catch (err) {
+      Alert.alert(
+        'Erro ao carregar meetups',
+        'Algo de errado ao carregar meetups, tente novamente mais tarde.'
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    loadMeetups();
-  }, [date]); // eslint-disable-line
+    if (isFocused) {
+      loadMeetups();
+    }
+  }, [date, isFocused]); // eslint-disable-line
 
   return (
     <Background>
@@ -91,7 +100,7 @@ export default function Dashboard() {
 }
 
 const tabBarIcon = ({ tintColor }) => (
-  <Icon name="event" size={20} color={tintColor} />
+  <Icon name="format-list-bulleted" size={20} color={tintColor} />
 );
 
 tabBarIcon.propTypes = {
@@ -99,6 +108,12 @@ tabBarIcon.propTypes = {
 };
 
 Dashboard.navigationOptions = {
-  tabBarLabel: 'Dashboard',
+  tabBarLabel: 'Meetups',
   tabBarIcon,
 };
+
+Dashboard.propTypes = {
+  isFocused: PropTypes.bool.isRequired,
+};
+
+export default withNavigationFocus(Dashboard);

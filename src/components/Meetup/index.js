@@ -15,7 +15,7 @@ import {
   ActionButton,
 } from './styles';
 
-export default function Meetup({ data }) {
+export default function Meetup({ data, onUnsubscribe }) {
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(data.subscribed);
 
@@ -42,8 +42,14 @@ export default function Meetup({ data }) {
 
         setSubscribed(true);
       }
+
+      if (onUnsubscribe) onUnsubscribe(data.id);
     } catch (err) {
-      Alert.alert('Erro', err);
+      if (err.response && err.response.data && err.response.data.error) {
+        Alert.alert('Erro', err.response.data.error);
+      } else {
+        Alert.alert('Erro', 'Erro desconhecido, tente novamente mais tarde.');
+      }
     } finally {
       setLoading(false);
     }
@@ -85,4 +91,9 @@ Meetup.propTypes = {
     }),
     subscribed: PropTypes.bool,
   }).isRequired,
+  onUnsubscribe: PropTypes.func,
+};
+
+Meetup.defaultProps = {
+  onUnsubscribe: null,
 };
